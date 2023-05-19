@@ -64,6 +64,7 @@ INSERT INTO Aluno (RA, Nome, Endereco, Cidade) VALUES (2, 'Maria', 'Rua Paulista
 INSERT INTO Aluno (RA, Nome, Endereco, Cidade) VALUES (3, 'Pedro', 'Rua Brás', 'Cidade C');
 INSERT INTO Aluno (RA, Nome, Endereco, Cidade) VALUES (4, 'Ana', 'Rua Lins', 'Cidade D');
 INSERT INTO Aluno (RA, Nome, Endereco, Cidade) VALUES (5, 'Carlos', 'Rua Villa', 'Cidade E');
+--select * from Aluno;
 
  
 
@@ -73,7 +74,7 @@ INSERT INTO Disciplina (COD_DISC, Nome_disc, Carga_hor) VALUES (2, 'História', 4
 INSERT INTO Disciplina (COD_DISC, Nome_disc, Carga_hor) VALUES (3, 'Geografia', 50);
 INSERT INTO Disciplina (COD_DISC, Nome_disc, Carga_hor) VALUES (4, 'Ciências', 45);
 INSERT INTO Disciplina (COD_DISC, Nome_disc, Carga_hor) VALUES (5, 'Português', 55);
-
+--select * from Disciplina;
  
 
 -- Inserção de dados na tabela Professor
@@ -82,14 +83,14 @@ INSERT INTO Professor (COD_PROF, Nome_Prof, Endereco, Cidade) VALUES (2, 'Prof. 
 INSERT INTO Professor (COD_PROF, Nome_Prof, Endereco, Cidade) VALUES (3, 'Prof. Oliveira', 'Rua Y', 'Cidade Z');
 INSERT INTO Professor (COD_PROF, Nome_Prof, Endereco, Cidade) VALUES (4, 'Prof. Souza', 'Rua T', 'Cidade W');
 INSERT INTO Professor (COD_PROF, Nome_Prof, Endereco, Cidade) VALUES (5, 'Prof. Almeida', 'Rua Q', 'Cidade V');
-
+--select * from Professor;
  
 
 -- Inserção de dados na tabela Turma
 INSERT INTO Turma (COD_DISC, COD_TURMA, COD_PROF, ANO, Periodo) VALUES (1, 1, 1, 2023, 'Primeiro Semestre');
 INSERT INTO Turma (COD_DISC, COD_TURMA, COD_PROF, ANO, Periodo) VALUES (2, 2, 2, 2023, 'Segundo Semestre');
 INSERT INTO Turma (COD_DISC, COD_TURMA, COD_PROF, ANO, Periodo) VALUES (3, 3, 3, 2023, 'Terceiro Semestre');
-
+--select * from Turma;
 
 
 
@@ -98,8 +99,9 @@ set serveroutput on
 set verify off
 
 
+-- Bloco PL/SQL para inserir os dados na tabela Historico
 DECLARE
-  v_ra Historico.ra%TYPE;
+  v_ra Aluno.ra%TYPE;
   v_cod_disc Historico.cod_disc%TYPE;
   v_cod_turma Historico.cod_turma%TYPE;
   v_cod_prof Historico.cod_prof%TYPE;
@@ -109,84 +111,83 @@ DECLARE
   v_nota2 Historico.nota2%TYPE;
   v_media Historico.media%TYPE;
   v_situacao Historico.situacao%TYPE;
+  
+  FUNCTION calcular_situacao(media IN NUMBER) RETURN VARCHAR2 IS 
+    situacao VARCHAR2(25);
+  BEGIN
+    IF media >= 7 THEN
+      situacao := 'Aprovado';
+    ELSIF media >= 5 THEN
+      situacao := 'Recuperação';
+    ELSE
+      situacao := 'Reprovado';
+    END IF;
+    
+    RETURN situacao;
+  END;
 BEGIN
-  -- Solicitar os dados ao usuário
   v_ra := &v_ra;
+  
+  BEGIN
+    SELECT ra
+    INTO v_ra
+    FROM Aluno
+    WHERE ra = v_ra;
+  EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+      DBMS_OUTPUT.PUT_LINE('Código inválido. Digite um código de aluno válido.');
+      RETURN;
+  END;
   v_cod_disc := &v_cod_disc;
   v_cod_turma := &v_cod_turma;
   v_cod_prof := &v_cod_prof;
   v_ano := &v_ano;
   
   BEGIN
-    SELECT 1
-    INTO v_ra
-    FROM Aluno
-    WHERE ra = v_ra;
-  EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-      DBMS_OUTPUT.PUT_LINE('Código inválido, digite um código de aluno válido');
-      RETURN;
-  END;
-  
-  BEGIN
-    SELECT 1
+    SELECT cod_disc
     INTO v_cod_disc
     FROM Disciplina
     WHERE cod_disc = v_cod_disc;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-      DBMS_OUTPUT.PUT_LINE('Código inválido, digite um código de disciplina válido.');
+      DBMS_OUTPUT.PUT_LINE('Código inválido. Digite um código de disciplina válido.');
       RETURN;
   END;
   
   BEGIN
-    SELECT 1
+    SELECT cod_turma
     INTO v_cod_turma
     FROM Turma
     WHERE cod_turma = v_cod_turma;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-      DBMS_OUTPUT.PUT_LINE('Código inválido, digite um código para tuma válido');
+      DBMS_OUTPUT.PUT_LINE('Código inválido. Digite um código de turma válido.');
       RETURN;
   END;
   
   BEGIN
-    SELECT 1
+    SELECT cod_prof
     INTO v_cod_prof
     FROM Professor
     WHERE cod_prof = v_cod_prof;
   EXCEPTION
     WHEN NO_DATA_FOUND THEN
-      DBMS_OUTPUT.PUT_LINE('Código inválido, digite um código de professor válido.');
+      DBMS_OUTPUT.PUT_LINE('Código inválido. Digite um código de professor válido.');
       RETURN;
   END;
-  
   v_faltas := &v_faltas;
   v_nota1 := &v_nota1;
   v_nota2 := &v_nota2;
+  v_media := calcular_media(v_nota1, v_nota2);
+  v_situacao := calcular_situacao(v_media);
   
-  v_media := (v_nota1 + v_nota2) / 2;
-  
-  IF v_media >= 7 THEN
-    v_situacao := 'Aprovado';
-  ELSIF v_media >= 5 THEN
-    v_situacao := 'Recuperação';
-  ELSE
-    v_situacao := 'Reprovado';
-  END IF;
-  
-  INSERT INTO Historico (ra, cod_disc, cod_turma, cod_prof, ano, faltas, nota1, nota2, media, situacao)
+  INSERT INTO Historico(ra, cod_disc, cod_turma, cod_prof, ano, faltas, nota1, nota2, media, situacao)
   VALUES (v_ra, v_cod_disc, v_cod_turma, v_cod_prof, v_ano, v_faltas, v_nota1, v_nota2, v_media, v_situacao);
   
-  DBMS_OUTPUT.PUT_LINE('Dados inseridos com sucesso!');
-EXCEPTION
-  WHEN OTHERS THEN
-    DBMS_OUTPUT.PUT_LINE('Erro: ' || SQLERRM);
+  DBMS_OUTPUT.PUT_LINE('Os dados foram inseridos com sucesso!!');
 END;
 
 
-
-
-
-
 select * from Historico;
+
+
