@@ -98,8 +98,6 @@ INSERT INTO Turma (COD_DISC, COD_TURMA, COD_PROF, ANO, Periodo) VALUES (3, 3, 3,
 set serveroutput on
 set verify off
 
-
--- Bloco PL/SQL para inserir os dados na tabela Historico
 DECLARE
   v_ra Aluno.ra%TYPE;
   v_cod_disc Historico.cod_disc%TYPE;
